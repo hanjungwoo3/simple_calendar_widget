@@ -61,9 +61,10 @@ class CalendarRemoteViewsFactory(private val context: Context) : RemoteViewsServ
             timeInMillis = event.startTime
         }
 
-        // 날짜 포맷 (MM/dd)
+        // 날짜 포맷 (MM/dd(요일))
         val dateFormat = SimpleDateFormat("MM/dd", Locale.getDefault())
-        val dateStr = dateFormat.format(calendar.time)
+        val dayOfWeekFormat = SimpleDateFormat("E", Locale.KOREAN)
+        val dateStr = "${dateFormat.format(calendar.time)}(${dayOfWeekFormat.format(calendar.time)})"
 
         // 시간 포맷 (HH:mm)
         val timeStr = if (event.allDay) {

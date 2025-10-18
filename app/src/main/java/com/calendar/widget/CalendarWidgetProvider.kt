@@ -55,6 +55,13 @@ class CalendarWidgetProvider : AppWidgetProvider() {
         ) {
             val views = RemoteViews(context.packageName, R.layout.calendar_widget)
 
+            // 오늘 날짜를 타이틀로 설정
+            val calendar = java.util.Calendar.getInstance()
+            val dateFormat = java.text.SimpleDateFormat("yyyy년 M월 d일", java.util.Locale.KOREAN)
+            val dayOfWeekFormat = java.text.SimpleDateFormat("E", java.util.Locale.KOREAN)
+            val todayText = "${dateFormat.format(calendar.time)} (${dayOfWeekFormat.format(calendar.time)})"
+            views.setTextViewText(R.id.widget_title, todayText)
+
             // RemoteViewsService를 통해 리스트 데이터 설정
             val intent = Intent(context, CalendarWidgetService::class.java).apply {
                 putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
