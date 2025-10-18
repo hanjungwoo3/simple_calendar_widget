@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Calendar Widget</string>
+    <string name="widget_description">Shows upcoming calendar events</string>
+    <string name="upcoming_events">다가오는 일정</string>
+    <string name="add_widget_instruction">홈 화면에서 위젯을 추가하세요.\n\n1. 홈 화면 길게 누르기\n2. 위젯 선택\n3. Calendar Widget 추가</string>
+    <string name="permission_note">위젯이 캘린더 데이터를 읽으려면 권한이 필요합니다.\n설정 > 앱 > Calendar Widget > 권한에서 캘린더 권한을 허용해주세요.</string>
+    <string name="no_events">예정된 일정이 없습니다</string>
+</resources>
+
+
