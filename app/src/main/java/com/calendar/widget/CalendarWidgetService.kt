@@ -85,6 +85,8 @@ class CalendarRemoteViewsFactory(private val context: Context) : RemoteViewsServ
                 CalendarContract.Events.CONTENT_URI,
                 event.id
             )
+            // MIME 타입을 지정하여 캘린더 앱만 필터링
+            type = "vnd.android.cursor.item/event"
             // 시작 시간과 종료 시간 추가
             putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, event.startTime)
             putExtra(CalendarContract.EXTRA_EVENT_END_TIME, event.endTime)
