@@ -70,7 +70,9 @@ class CalendarWidgetProvider : AppWidgetProvider() {
             views.setRemoteAdapter(R.id.event_list, intent)
 
             // 각 아이템 클릭 시 해당 이벤트의 상세 화면으로 이동
-            val clickIntent = Intent(Intent.ACTION_VIEW)
+            val clickIntent = Intent(Intent.ACTION_VIEW).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
             val clickPendingIntent = PendingIntent.getActivity(
                 context,
                 0,
