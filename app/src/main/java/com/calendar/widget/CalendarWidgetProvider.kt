@@ -69,15 +69,17 @@ class CalendarWidgetProvider : AppWidgetProvider() {
             }
             views.setRemoteAdapter(R.id.event_list, intent)
 
-            // 각 아이템 클릭 시 해당 이벤트의 상세 화면으로 이동
+            // 각 아이템 클릭 시 캘린더 앱으로 이동
+            // Android 14+ 보안 정책: implicit Intent는 FLAG_IMMUTABLE 사용
             val clickIntent = Intent(Intent.ACTION_VIEW).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             }
             val clickPendingIntent = PendingIntent.getActivity(
                 context,
                 0,
                 clickIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE or 
+                    PendingIntent.FLAG_ALLOW_UNSAFE_IMPLICIT_INTENT
             )
             views.setPendingIntentTemplate(R.id.event_list, clickPendingIntent)
 

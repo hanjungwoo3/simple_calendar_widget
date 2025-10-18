@@ -39,7 +39,7 @@ class CalendarRemoteViewsFactory(private val context: Context) : RemoteViewsServ
     }
 
     override fun onDataSetChanged() {
-        // 캘린더 데이터 로드
+        // 캘린더 데이터 로드 (내부에서 clear 수행)
         loadCalendarEvents()
     }
 
@@ -78,20 +78,16 @@ class CalendarRemoteViewsFactory(private val context: Context) : RemoteViewsServ
         views.setTextViewText(R.id.event_time, timeStr)
         views.setTextViewText(R.id.event_title, event.title)
 
-        // 각 아이템 클릭 시 해당 이벤트의 상세 화면으로 이동
-        val fillInIntent = Intent(Intent.ACTION_VIEW).apply {
+        // 각 아이템 클릭 시 구글 캘린더 앱으로 이동
+        val fillInIntent = Intent().apply {
             // 이벤트 상세 화면으로 이동하는 URI
             data = ContentUris.withAppendedId(
                 CalendarContract.Events.CONTENT_URI,
                 event.id
             )
-            // MIME 타입을 지정하여 캘린더 앱만 필터링
-            type = "vnd.android.cursor.item/event"
             // 시작 시간과 종료 시간 추가
             putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, event.startTime)
             putExtra(CalendarContract.EXTRA_EVENT_END_TIME, event.endTime)
-            // 캘린더 앱으로 명시적 라우팅
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         
         // 전체 아이템 컨테이너에 클릭 이벤트 설정
