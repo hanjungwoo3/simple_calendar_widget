@@ -68,7 +68,7 @@ class CalendarRemoteViewsFactory(private val context: Context) : RemoteViewsServ
 
         // 시간 포맷 (HH:mm)
         val timeStr = if (event.allDay) {
-            "종일"
+            ""  // 종일 일정은 시간 표시 안 함
         } else {
             val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
             timeFormat.format(calendar.time)
@@ -77,6 +77,13 @@ class CalendarRemoteViewsFactory(private val context: Context) : RemoteViewsServ
         views.setTextViewText(R.id.event_date, dateStr)
         views.setTextViewText(R.id.event_time, timeStr)
         views.setTextViewText(R.id.event_title, event.title)
+        
+        // 종일 일정은 투명한 회색 배경
+        if (event.allDay) {
+            views.setInt(R.id.event_item_container, "setBackgroundColor", 0x33FFFFFF)  // 20% 흰색
+        } else {
+            views.setInt(R.id.event_item_container, "setBackgroundColor", 0x00000000)  // 투명
+        }
 
         // 각 아이템 클릭 시 구글 캘린더 앱으로 이동
         val fillInIntent = Intent().apply {
