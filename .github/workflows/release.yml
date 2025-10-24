@@ -1,67 +1,96 @@
-name: Build and Release APK
+name: Auto Release APK
 
 on:
   push:
-    tags:
-      - 'v*'  # v로 시작하는 태그가 푸시될 때 실행 (예: v1.0.6)
+    branches:
+      - main
+    paths:
+      - 'app/build.gradle'  # build.gradle이 변경될 때만 실행
 
 jobs:
-  build:
+  check-and-release:
     runs-on: ubuntu-latest
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # 모든 히스토리와 태그 가져오기
+      
+      - name: Extract version from build.gradle
+        id: extract_version
+        run: |
+          VERSION_NAME=$(grep 'versionName' app/build.gradle | sed 's/.*versionName "\(.*\)".*/\1/')
+          echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_OUTPUT
+          echo "Extracted version: $VERSION_NAME"
+      
+      - name: Check if tag exists
+        id: check_tag
+        run: |
+          if git rev-parse "v${{ steps.extract_version.outputs.VERSION_NAME }}" >/dev/null 2>&1; then
+            echo "TAG_EXISTS=true" >> $GITHUB_OUTPUT
+            echo "Tag v${{ steps.extract_version.outputs.VERSION_NAME }} already exists"
+          else
+            echo "TAG_EXISTS=false" >> $GITHUB_OUTPUT
+            echo "Tag v${{ steps.extract_version.outputs.VERSION_NAME }} does not exist"
+          fi
       
       - name: Set up JDK 17
+        if: steps.check_tag.outputs.TAG_EXISTS == 'false'
         uses: actions/setup-java@v3
         with:
           java-version: '17'
           distribution: 'temurin'
       
       - name: Grant execute permission for gradlew
+        if: steps.check_tag.outputs.TAG_EXISTS == 'false'
         run: chmod +x gradlew
       
       - name: Build Release APK
+        if: steps.check_tag.outputs.TAG_EXISTS == 'false'
         run: ./gradlew assembleRelease
       
-      - name: Sign APK (optional)
+      - name: Create and push tag
+        if: steps.check_tag.outputs.TAG_EXISTS == 'false'
         run: |
-          echo "APK 서명은 필요시 추가"
-      
-      - name: Get version from tag
-        id: get_version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git tag -a "v${{ steps.extract_version.outputs.VERSION_NAME }}" -m "Release v${{ steps.extract_version.outputs.VERSION_NAME }}"
+          git push origin "v${{ steps.extract_version.outputs.VERSION_NAME }}"
       
       - name: Create Release
+        if: steps.check_tag.outputs.TAG_EXISTS == 'false'
         id: create_release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ steps.get_version.outputs.VERSION }}
+          tag_name: v${{ steps.extract_version.outputs.VERSION_NAME }}
+          release_name: Release v${{ steps.extract_version.outputs.VERSION_NAME }}
           body: |
-            ## 변경사항
-            - 버전 ${{ steps.get_version.outputs.VERSION }} 릴리즈
+            ## 📱 Calendar Widget v${{ steps.extract_version.outputs.VERSION_NAME }}
             
-            ## 다운로드
+            ### 다운로드
             아래 APK 파일을 다운로드하여 설치하세요.
             
-            ## 설치 방법
-            1. APK 파일 다운로드
-            2. 설정 > 보안 > 출처를 알 수 없는 앱 설치 허용
-            3. APK 파일 실행하여 설치
+            ### 설치 방법
+            1. 📥 APK 파일 다운로드
+            2. ⚙️ 설정 > 보안 > 출처를 알 수 없는 앱 설치 허용
+            3. 📲 APK 파일 실행하여 설치
+            
+            ### 변경사항
+            자세한 변경사항은 커밋 로그를 확인하세요.
           draft: false
           prerelease: false
       
       - name: Upload Release APK
+        if: steps.check_tag.outputs.TAG_EXISTS == 'false'
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./app/build/outputs/apk/release/app-release.apk
-          asset_name: calendar-widget-${{ steps.get_version.outputs.VERSION }}.apk
+          asset_name: calendar-widget-v${{ steps.extract_version.outputs.VERSION_NAME }}.apk
           asset_content_type: application/vnd.android.package-archive
 

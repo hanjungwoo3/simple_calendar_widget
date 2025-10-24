@@ -121,41 +121,44 @@ app/
 
 이 프로젝트는 GitHub Actions를 사용하여 자동으로 APK를 빌드하고 릴리스합니다.
 
-#### 릴리스 만들기 (자동 배포)
+#### 릴리스 만들기 (완전 자동 배포)
 
 1. **build.gradle에서 버전 업데이트**
    ```gradle
    defaultConfig {
-       versionCode 6
-       versionName "1.0.6"
+       versionCode 7
+       versionName "1.0.7"
    }
    ```
 
-2. **변경사항 커밋 및 푸시**
+2. **변경사항 커밋 및 푸시 (이게 끝!)**
    ```bash
-   git add .
-   git commit -m "Release v1.0.6"
+   git add app/build.gradle
+   git commit -m "Bump version to 1.0.7"
    git push origin main
    ```
 
-3. **태그 생성 및 푸시**
-   ```bash
-   git tag v1.0.6
-   git push origin v1.0.6
-   ```
+3. **자동 처리 (GitHub Actions가 알아서!)**
+   - `build.gradle`에서 자동으로 버전 추출
+   - 해당 버전의 태그가 없으면 자동 생성 (예: `v1.0.7`)
+   - APK 자동 빌드
+   - Release 자동 생성 및 APK 업로드
+   - APK 파일명: `calendar-widget-v1.0.7.apk`
 
-4. **자동 처리**
-   - GitHub Actions가 자동으로 APK 빌드
-   - Release 페이지에 자동 업로드
-   - APK 파일명: `calendar-widget-v1.0.6.apk`
-   - 앱 내에서 자동으로 새 버전 감지
+**더 이상 수동으로 태그를 만들 필요가 없습니다!** 🎉
 
 #### 워크플로우 파일
 
 `.github/workflows/release.yml` 파일이 빌드 프로세스를 정의합니다.
 
 - **트리거**: 
-  - `v*` 형식의 태그 푸시 시 자동 실행
+  - `app/build.gradle` 파일이 변경되어 main 브랜치에 푸시될 때 자동 실행
+  
+- **작동 방식**:
+  1. `build.gradle`에서 `versionName` 추출
+  2. 해당 버전의 태그가 이미 있는지 확인
+  3. 태그가 없으면 자동으로 생성 및 푸시
+  4. APK 빌드 및 Release 생성
   
 - **빌드 환경**:
   - Ubuntu Latest
