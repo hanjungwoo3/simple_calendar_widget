@@ -52,6 +52,14 @@ jobs:
         if: steps.check_tag.outputs.TAG_EXISTS == 'false'
         run: ./gradlew assembleRelease
       
+      - name: Find APK file
+        if: steps.check_tag.outputs.TAG_EXISTS == 'false'
+        id: find_apk
+        run: |
+          APK_PATH=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1)
+          echo "APK_PATH=$APK_PATH" >> $GITHUB_OUTPUT
+          echo "Found APK at: $APK_PATH"
+      
       - name: Create and push tag
         if: steps.check_tag.outputs.TAG_EXISTS == 'false'
         run: |
@@ -92,7 +100,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./app/build/outputs/apk/release/app-release.apk
+          asset_path: ${{ steps.find_apk.outputs.APK_PATH }}
           asset_name: calendar-widget-v${{ steps.extract_version.outputs.VERSION_NAME }}.apk
           asset_content_type: application/vnd.android.package-archive
 
