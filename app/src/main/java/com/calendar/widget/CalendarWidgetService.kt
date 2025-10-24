@@ -78,11 +78,41 @@ class CalendarRemoteViewsFactory(private val context: Context) : RemoteViewsServ
         views.setTextViewText(R.id.event_time, timeStr)
         views.setTextViewText(R.id.event_title, event.title)
         
-        // 종일 일정은 투명한 회색 배경
-        if (event.allDay) {
-            views.setInt(R.id.event_item_container, "setBackgroundColor", 0x33FFFFFF)  // 20% 흰색
-        } else {
-            views.setInt(R.id.event_item_container, "setBackgroundColor", 0x00000000)  // 투명
+        // 오늘 날짜인지 확인
+        val today = Calendar.getInstance()
+        val isToday = calendar.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
+                      calendar.get(Calendar.MONTH) == today.get(Calendar.MONTH) &&
+                      calendar.get(Calendar.DAY_OF_MONTH) == today.get(Calendar.DAY_OF_MONTH)
+        
+        // 날짜별 배경색 교대 적용을 위한 로직
+        var dateChangeCount = 0
+        if (position > 0) {
+            var prevDate = ""
+            val prevDateCal = Calendar.getInstance()
+            for (i in 0 until position) {
+                prevDateCal.timeInMillis = events[i].startTime
+                val currentDateKey = "${prevDateCal.get(Calendar.YEAR)}-${prevDateCal.get(Calendar.MONTH)}-${prevDateCal.get(Calendar.DAY_OF_MONTH)}"
+                
+                if (i == 0) {
+                    prevDate = currentDateKey
+                } else {
+                    val checkCal = Calendar.getInstance().apply { timeInMillis = events[i - 1].startTime }
+                    val checkDateKey = "${checkCal.get(Calendar.YEAR)}-${checkCal.get(Calendar.MONTH)}-${checkCal.get(Calendar.DAY_OF_MONTH)}"
+                    if (currentDateKey != checkDateKey) {
+                        dateChangeCount++
+                        prevDate = currentDateKey
+                    }
+                }
+            }
+        }
+        
+        val useGrayBackground = dateChangeCount % 2 == 0
+        
+        // 배경색 설정: 오늘이면 녹색, 그 외는 날짜별로 회색/투명 교대
+        when {
+            isToday -> views.setInt(R.id.event_item_container, "setBackgroundColor", 0x66228B22)  // 어두운 녹색 (ForestGreen)
+            useGrayBackground -> views.setInt(R.id.event_item_container, "setBackgroundColor", 0x33FFFFFF)  // 20% 흰색
+            else -> views.setInt(R.id.event_item_container, "setBackgroundColor", 0x00000000)  // 투명
         }
 
         // 각 아이템 클릭 시 구글 캘린더 앱으로 이동

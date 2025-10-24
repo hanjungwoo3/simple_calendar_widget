@@ -9,12 +9,15 @@
 - 👆 클릭하면 구글 캘린더 앱으로 연결
 - 🎨 투명한 배경과 작은 글씨
 - 📱 리사이즈 가능한 위젯
+- 🟢 오늘 날짜 일정은 녹색 배경으로 강조
+- 🎯 날짜별로 회색/투명 배경 교대 표시로 구분
+- 🔗 앱 내에서 현재 버전 확인 및 GitHub 릴리즈 페이지 바로가기
 
 ## 설치 방법
 
 ### 옵션 1: GitHub Release에서 다운로드 (권장)
 
-1. [Releases 페이지](https://github.com/hanjungwoo3/simple_calendar_widget/releases)에서 최신 APK 다운로드
+1. [Releases 페이지](https://github.com/hanjungwoo3/simple_calendar_widget/releases)에서 최신 APK 다운로드 (현재 최신: [v1.0.5](https://github.com/hanjungwoo3/simple_calendar_widget/releases/tag/v1.0.5))
 2. 다운로드한 `app-debug.apk` 파일을 Android 기기에 설치
 3. "알 수 없는 출처" 앱 설치 허용 필요
 
@@ -118,31 +121,41 @@ app/
 
 이 프로젝트는 GitHub Actions를 사용하여 자동으로 APK를 빌드하고 릴리스합니다.
 
-#### 릴리스 만들기
+#### 릴리스 만들기 (자동 배포)
 
-1. **태그 생성 및 푸시**
-   ```bash
-   git tag v1.0.0
-   git push origin v1.0.0
+1. **build.gradle에서 버전 업데이트**
+   ```gradle
+   defaultConfig {
+       versionCode 6
+       versionName "1.0.6"
+   }
    ```
 
-2. **자동 처리**
+2. **변경사항 커밋 및 푸시**
+   ```bash
+   git add .
+   git commit -m "Release v1.0.6"
+   git push origin main
+   ```
+
+3. **태그 생성 및 푸시**
+   ```bash
+   git tag v1.0.6
+   git push origin v1.0.6
+   ```
+
+4. **자동 처리**
    - GitHub Actions가 자동으로 APK 빌드
    - Release 페이지에 자동 업로드
-   - `app-debug.apk` 와 `app-release-unsigned.apk` 생성
-
-3. **수동 실행**
-   - GitHub 저장소 > Actions 탭
-   - "Build and Release APK" 워크플로우 선택
-   - "Run workflow" 버튼 클릭
+   - APK 파일명: `calendar-widget-v1.0.6.apk`
+   - 앱 내에서 자동으로 새 버전 감지
 
 #### 워크플로우 파일
 
-`.github/workflows/build-release.yml` 파일이 빌드 프로세스를 정의합니다.
+`.github/workflows/release.yml` 파일이 빌드 프로세스를 정의합니다.
 
 - **트리거**: 
   - `v*` 형식의 태그 푸시 시 자동 실행
-  - 수동 실행 가능 (`workflow_dispatch`)
   
 - **빌드 환경**:
   - Ubuntu Latest
@@ -150,8 +163,13 @@ app/
   - Android SDK 자동 설치
 
 - **산출물**:
-  - Debug APK: `app-debug.apk`
-  - Release APK: `app-release-unsigned.apk` (서명 없음)
+  - Release APK: `calendar-widget-v{version}.apk`
+
+#### 앱 내 버전 확인
+
+앱을 실행하면 현재 설치된 버전을 확인할 수 있습니다:
+- 현재 버전 표시
+- "GitHub 릴리즈 페이지" 버튼으로 최신 버전 확인 및 다운로드 가능
 
 #### APK 서명하기 (선택사항)
 
