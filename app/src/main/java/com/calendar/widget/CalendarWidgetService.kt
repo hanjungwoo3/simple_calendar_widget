@@ -83,30 +83,22 @@ class CalendarRemoteViewsFactory(private val context: Context) : RemoteViewsServ
         val isToday = calendar.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
                       calendar.get(Calendar.MONTH) == today.get(Calendar.MONTH) &&
                       calendar.get(Calendar.DAY_OF_MONTH) == today.get(Calendar.DAY_OF_MONTH)
-        
+
         // 날짜별 배경색 교대 적용을 위한 로직
-        var dateChangeCount = 0
-        if (position > 0) {
-            var prevDate = ""
-            val prevDateCal = Calendar.getInstance()
-            for (i in 0 until position) {
-                prevDateCal.timeInMillis = events[i].startTime
-                val currentDateKey = "${prevDateCal.get(Calendar.YEAR)}-${prevDateCal.get(Calendar.MONTH)}-${prevDateCal.get(Calendar.DAY_OF_MONTH)}"
-                
-                if (i == 0) {
-                    prevDate = currentDateKey
-                } else {
-                    val checkCal = Calendar.getInstance().apply { timeInMillis = events[i - 1].startTime }
-                    val checkDateKey = "${checkCal.get(Calendar.YEAR)}-${checkCal.get(Calendar.MONTH)}-${checkCal.get(Calendar.DAY_OF_MONTH)}"
-                    if (currentDateKey != checkDateKey) {
-                        dateChangeCount++
-                        prevDate = currentDateKey
-                    }
-                }
+        // 현재 날짜까지의 고유 날짜 개수를 세서 몇 번째 날짜인지 파악
+        val uniqueDates = mutableListOf<String>()
+        for (i in 0..position) {
+            val checkCal = Calendar.getInstance().apply { timeInMillis = events[i].startTime }
+            val checkDateKey = "${checkCal.get(Calendar.YEAR)}-${checkCal.get(Calendar.MONTH)}-${checkCal.get(Calendar.DAY_OF_MONTH)}"
+
+            if (!uniqueDates.contains(checkDateKey)) {
+                uniqueDates.add(checkDateKey)
             }
         }
-        
-        val useGrayBackground = dateChangeCount % 2 == 0
+
+        // 첫 번째 날짜(dateIndex=0)는 배경 있음, 두 번째 날짜(dateIndex=1)는 배경 없음, 계속 교차
+        val dateIndex = uniqueDates.size - 1
+        val useGrayBackground = dateIndex % 2 == 0
         
         // 배경색 설정: 오늘이면 녹색, 그 외는 날짜별로 회색/투명 교대
         when {
@@ -144,18 +136,35 @@ class CalendarRemoteViewsFactory(private val context: Context) : RemoteViewsServ
     private fun loadCalendarEvents() {
         events.clear()
         
-        Log.e(TAG, "========== loadCalendarEvents() 시작 ==========")
-        System.out.println("CalendarWidget: loadCalendarEvents() 시작")
+        val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.getDefault()).format(Date())
+        Log.e(TAG, "========================================")
+        Log.e(TAG, "[$timestamp] loadCalendarEvents() 시작")
+        Log.e(TAG, "Android SDK: ${android.os.Build.VERSION.SDK_INT}")
+        Log.e(TAG, "Package: ${context.packageName}")
+        Log.e(TAG, "========================================")
 
         // 권한 체크
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALENDAR)
-            != PackageManager.PERMISSION_GRANTED) {
+        val hasPermission = ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALENDAR) == PackageManager.PERMISSION_GRANTED
+        Log.e(TAG, "READ_CALENDAR 권한 상태: $hasPermission")
+        
+        if (!hasPermission) {
+            Log.e(TAG, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
             Log.e(TAG, "!!!!! 캘린더 권한이 없습니다 !!!!!")
-            System.out.println("CalendarWidget: 권한 없음")
+            Log.e(TAG, "!!!!! 앱을 실행하여 권한을 허용해주세요 !!!!!")
+            Log.e(TAG, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+            
+            // 권한 없음 메시지 표시용 더미 이벤트 추가
+            events.add(CalendarEvent(
+                id = -1,
+                title = "⚠️ 캘린더 읽기 권한이 필요합니다. 앱을 실행하여 권한을 허용해주세요.",
+                startTime = System.currentTimeMillis(),
+                endTime = System.currentTimeMillis(),
+                allDay = true
+            ))
             return
         }
         
-        Log.e(TAG, "권한 확인 완료")
+        Log.e(TAG, "✅ 권한 확인 완료")
 
         try {
             // 오늘 시작 시간
@@ -171,8 +180,9 @@ class CalendarRemoteViewsFactory(private val context: Context) : RemoteViewsServ
                 add(Calendar.MONTH, 3)
             }.timeInMillis
 
-            Log.e(TAG, "검색 기간: ${Date(startTime)} ~ ${Date(endTime)}")
-            System.out.println("CalendarWidget: 검색 기간 설정 완료")
+            Log.e(TAG, "📅 검색 기간 설정")
+            Log.e(TAG, "  시작: ${Date(startTime)}")
+            Log.e(TAG, "  종료: ${Date(endTime)}")
 
             val projection = arrayOf(
                 CalendarContract.Events._ID,
@@ -186,6 +196,9 @@ class CalendarRemoteViewsFactory(private val context: Context) : RemoteViewsServ
             val selectionArgs = arrayOf(startTime.toString(), endTime.toString())
             val sortOrder = "${CalendarContract.Events.DTSTART} ASC"
 
+            Log.e(TAG, "🔍 ContentProvider 쿼리 시작")
+            Log.e(TAG, "  URI: ${CalendarContract.Events.CONTENT_URI}")
+            
             val cursor: Cursor? = context.contentResolver.query(
                 CalendarContract.Events.CONTENT_URI,
                 projection,
@@ -194,8 +207,11 @@ class CalendarRemoteViewsFactory(private val context: Context) : RemoteViewsServ
                 sortOrder
             )
 
-            Log.e(TAG, "Cursor 생성: ${cursor != null}, count: ${cursor?.count}")
-            System.out.println("CalendarWidget: Cursor count = ${cursor?.count}")
+            val cursorExists = cursor != null
+            val cursorCount = cursor?.count ?: 0
+            Log.e(TAG, "📊 쿼리 결과")
+            Log.e(TAG, "  Cursor 생성: $cursorExists")
+            Log.e(TAG, "  일정 개수: $cursorCount")
 
             cursor?.use {
                 val idColumn = it.getColumnIndex(CalendarContract.Events._ID)
@@ -204,15 +220,19 @@ class CalendarRemoteViewsFactory(private val context: Context) : RemoteViewsServ
                 val endColumn = it.getColumnIndex(CalendarContract.Events.DTEND)
                 val allDayColumn = it.getColumnIndex(CalendarContract.Events.ALL_DAY)
 
+                var eventNum = 0
                 while (it.moveToNext() && events.size < 20) { // 최대 20개까지
+                    eventNum++
                     val id = it.getLong(idColumn)
                     val title = it.getString(titleColumn) ?: "제목 없음"
                     val start = it.getLong(startColumn)
                     val end = it.getLong(endColumn)
                     val allDay = it.getInt(allDayColumn) == 1
 
-                    Log.e(TAG, "일정 발견: $title, ${Date(start)}")
-                    System.out.println("CalendarWidget: 일정 - $title")
+                    val eventDateFormat = SimpleDateFormat("MM/dd HH:mm", Locale.getDefault())
+                    Log.e(TAG, "  [$eventNum] 일정: $title")
+                    Log.e(TAG, "      시작: ${eventDateFormat.format(Date(start))}")
+                    Log.e(TAG, "      종일: $allDay")
 
                     events.add(
                         CalendarEvent(
@@ -226,15 +246,55 @@ class CalendarRemoteViewsFactory(private val context: Context) : RemoteViewsServ
                 }
             }
             
-            Log.e(TAG, "========== 총 ${events.size}개 일정 로드 완료 ==========")
-            System.out.println("CalendarWidget: 총 ${events.size}개 일정")
+            Log.e(TAG, "========================================")
+            Log.e(TAG, "✅ 총 ${events.size}개 일정 로드 완료")
+            Log.e(TAG, "========================================")
+            
+            if (events.isEmpty()) {
+                Log.e(TAG, "⚠️ 주의: 일정이 없습니다!")
+                Log.e(TAG, "  1. 디바이스에 캘린더 앱이 설치되어 있나요?")
+                Log.e(TAG, "  2. 캘린더 앱에 일정이 등록되어 있나요?")
+                Log.e(TAG, "  3. 동기화된 계정(구글 등)의 캘린더가 있나요?")
+                
+                // 일정 없음 메시지 표시
+                events.add(CalendarEvent(
+                    id = -2,
+                    title = "📭 등록된 일정이 없습니다",
+                    startTime = System.currentTimeMillis(),
+                    endTime = System.currentTimeMillis(),
+                    allDay = true
+                ))
+            }
         } catch (e: SecurityException) {
             // 권한이 없는 경우
-            Log.e(TAG, "SecurityException: ${e.message}")
+            Log.e(TAG, "========================================")
+            Log.e(TAG, "❌ SecurityException 발생!")
+            Log.e(TAG, "메시지: ${e.message}")
+            Log.e(TAG, "========================================")
             e.printStackTrace()
+            
+            events.add(CalendarEvent(
+                id = -3,
+                title = "⚠️ 보안 오류: 캘린더 접근 권한 문제",
+                startTime = System.currentTimeMillis(),
+                endTime = System.currentTimeMillis(),
+                allDay = true
+            ))
         } catch (e: Exception) {
-            Log.e(TAG, "Exception: ${e.message}")
+            Log.e(TAG, "========================================")
+            Log.e(TAG, "❌ Exception 발생!")
+            Log.e(TAG, "타입: ${e.javaClass.simpleName}")
+            Log.e(TAG, "메시지: ${e.message}")
+            Log.e(TAG, "========================================")
             e.printStackTrace()
+            
+            events.add(CalendarEvent(
+                id = -4,
+                title = "❌ 오류 발생: ${e.message}",
+                startTime = System.currentTimeMillis(),
+                endTime = System.currentTimeMillis(),
+                allDay = true
+            ))
         }
     }
 }

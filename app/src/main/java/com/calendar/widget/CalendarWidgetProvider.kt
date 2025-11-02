@@ -17,6 +17,12 @@ class CalendarWidgetProvider : AppWidgetProvider() {
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray
     ) {
+        Log.d(TAG, "========================================")
+        Log.d(TAG, "onUpdate() 호출됨")
+        Log.d(TAG, "위젯 개수: ${appWidgetIds.size}")
+        Log.d(TAG, "위젯 IDs: ${appWidgetIds.joinToString(", ")}")
+        Log.d(TAG, "========================================")
+        
         for (appWidgetId in appWidgetIds) {
             updateAppWidget(context, appWidgetManager, appWidgetId)
         }
@@ -25,9 +31,11 @@ class CalendarWidgetProvider : AppWidgetProvider() {
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
         
+        Log.d(TAG, "onReceive() 호출됨 - Action: ${intent.action}")
+        
         when (intent.action) {
             ACTION_REFRESH -> {
-                Log.d("CalendarWidget", "새로고침 버튼 클릭됨")
+                Log.d(TAG, "새로고침 버튼 클릭됨")
                 val appWidgetManager = AppWidgetManager.getInstance(context)
                 val componentName = ComponentName(context, CalendarWidgetProvider::class.java)
                 val appWidgetIds = appWidgetManager.getAppWidgetIds(componentName)
@@ -50,7 +58,7 @@ class CalendarWidgetProvider : AppWidgetProvider() {
             Intent.ACTION_DATE_CHANGED,
             Intent.ACTION_TIME_CHANGED,
             Intent.ACTION_TIMEZONE_CHANGED -> {
-                Log.d("CalendarWidget", "날짜/시간 변경됨: ${intent.action}")
+                Log.d(TAG, "날짜/시간 변경됨: ${intent.action}")
                 val appWidgetManager = AppWidgetManager.getInstance(context)
                 val componentName = ComponentName(context, CalendarWidgetProvider::class.java)
                 val appWidgetIds = appWidgetManager.getAppWidgetIds(componentName)
@@ -65,20 +73,24 @@ class CalendarWidgetProvider : AppWidgetProvider() {
     }
 
     override fun onEnabled(context: Context) {
-        // 첫 위젯이 생성될 때
+        Log.d(TAG, "onEnabled() - 첫 위젯 생성됨")
     }
 
     override fun onDisabled(context: Context) {
-        // 마지막 위젯이 제거될 때
+        Log.d(TAG, "onDisabled() - 마지막 위젯 제거됨")
     }
 
     companion object {
+        private const val TAG = "CalendarWidget"
         private const val ACTION_REFRESH = "com.calendar.widget.ACTION_REFRESH"
+        
         internal fun updateAppWidget(
             context: Context,
             appWidgetManager: AppWidgetManager,
             appWidgetId: Int
         ) {
+            Log.d(TAG, "updateAppWidget() - ID: $appWidgetId")
+            
             val views = RemoteViews(context.packageName, R.layout.calendar_widget)
 
             // 오늘 날짜를 타이틀로 설정
@@ -136,8 +148,9 @@ class CalendarWidgetProvider : AppWidgetProvider() {
 
             appWidgetManager.updateAppWidget(appWidgetId, views)
             appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetId, R.id.event_list)
+            
+            Log.d(TAG, "updateAppWidget() 완료 - ID: $appWidgetId")
         }
     }
 }
-
 
